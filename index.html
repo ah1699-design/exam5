@@ -1,0 +1,1319 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>抽卡特訓班 (四階段完整版)</title>
+
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        body {
+            font-family: '微軟正黑體', sans-serif; 
+            background-color: #1a1a2e; 
+            color: #ecf0f1; display: flex; justify-content: center;
+            align-items: center; height: 100vh; margin: 0; overflow: hidden;
+            transition: background-color 0.5s ease; 
+        }
+        body.rescue-mode { background-color: #4a1010; }
+
+        .container {
+            background-color: #2c3e50; width: 90%; max-width: 650px;
+            padding: 30px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            text-align: center; max-height: 90vh; overflow-y: auto; position: relative;
+        }
+        h1 { color: #f1c40f; margin-bottom: 5px; }
+        .subtitle { color: #95a5a6; margin-bottom: 20px; font-size: 14px; }
+        
+        #student-setup { display: block; }
+        #game-area { display: none; }
+        #result-area { display: none; }
+
+        .warning-box {
+            background-color: #c0392b; color: white; padding: 12px; 
+            border-radius: 8px; margin-bottom: 20px; font-weight: bold;
+            font-size: 15px; line-height: 1.4; border: 2px solid #e74c3c;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        input[type="text"] {
+            width: 80%; padding: 15px; font-size: 18px; border-radius: 8px; 
+            border: 2px solid #3498db; background: #1a1a2e; color: white; 
+            text-align: center; margin-bottom: 20px;
+        }
+
+        /* 卡包選擇器 UI */
+        .pack-selector-container {
+            margin: 20px 0; padding: 15px; background: #16213e; border-radius: 10px;
+        }
+        .pack-selector-title { font-size: 16px; color: #f39c12; margin-bottom: 10px; font-weight: bold; }
+        .pack-grid {
+            display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;
+        }
+        .pack-option {
+            background: #2c3e50; border: 2px solid #34495e; border-radius: 8px;
+            padding: 10px 15px; cursor: pointer; transition: 0.3s;
+            font-size: 16px; font-weight: bold; color: #cbd5e1; flex: 1; min-width: 120px;
+        }
+        .pack-option:hover { background: #34495e; }
+        .pack-option.active {
+            background: #2980b9; border-color: #3498db; color: #fff;
+            box-shadow: 0 0 15px rgba(52, 152, 219, 0.6); transform: scale(1.05);
+        }
+
+        .status-bar {
+            display: flex; justify-content: space-between; align-items: center;
+            background: #16213e; padding: 10px 20px; border-radius: 10px; margin-bottom: 20px;
+        }
+        .hp-bar { font-size: 18px; color: #e74c3c; text-align: left; display: flex; align-items: center; gap: 10px;}
+        .streak-badge { background: #d35400; color: white; padding: 3px 8px; border-radius: 5px; font-size: 14px; font-weight: bold; }
+        .inventory { font-size: 14px; color: #f1c40f; text-align: right; font-weight: bold;}
+        
+        .tag {
+            display: inline-block; background: #e74c3c; color: white;
+            padding: 5px 10px; border-radius: 5px; font-size: 14px; margin-bottom: 15px; font-weight: bold;
+        }
+        .question-text { font-size: 22px; line-height: 1.5; margin-bottom: 30px; }
+
+        .btn {
+            display: block; width: 100%; padding: 15px; margin-bottom: 15px;
+            font-size: 18px; cursor: pointer; border: none; border-radius: 8px;
+            background-color: #34495e; color: white; font-weight: bold; transition: 0.2s; box-shadow: 0 4px #2c3e50;
+        }
+        .btn:hover { background-color: #3498db; }
+        .btn:active { transform: translateY(4px); box-shadow: none; }
+        .btn-start { background-color: #27ae60; box-shadow: 0 4px #1e8449; margin-top: 10px; }
+        .btn-collection { background-color: #8e44ad; box-shadow: 0 4px #732d91; }
+
+        #log-report { text-align: left; background: #1a1a2e; padding: 15px; border-radius: 8px; color: #f39c12; font-size: 16px; margin-bottom: 20px; max-height: 200px; overflow-y: auto;}
+        
+        #correct-splash {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            font-size: 80px; font-weight: bold; color: #2ecc71; text-shadow: 0 0 30px rgba(46, 204, 113, 0.8);
+            opacity: 0; pointer-events: none; transition: 0.3s; z-index: 150;
+        }
+        #correct-splash.show { opacity: 1; transform: translate(-50%, -60%) scale(1.2); }
+
+        #gacha-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); display: none; justify-content: center;
+            align-items: center; flex-direction: column; z-index: 200;
+        }
+        .gacha-card {
+            width: 250px; height: 350px; border-radius: 15px; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            font-size: 24px; font-weight: bold; color: white; text-align: center; padding: 20px; box-sizing: border-box; transform: scale(0);
+            transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); text-shadow: 2px 2px 4px rgba(0,0,0,0.5); position: relative; overflow: hidden;
+        }
+        .card-SP { background: linear-gradient(135deg, #ff00cc, #3333ff); box-shadow: 0 0 50px #ff00cc; border: 3px solid #fff; }
+        .card-UR { background: linear-gradient(135deg, #FFD700, #FF8C00); box-shadow: 0 0 40px #FFD700; border: 3px solid #fff; }
+        .card-SSR { background: linear-gradient(135deg, #ff007f, #7f00ff); box-shadow: 0 0 30px #ff007f; border: 2px solid #fff; }
+        .card-SR { background: linear-gradient(135deg, #00d2ff, #3a7bd5); box-shadow: 0 0 15px #00d2ff; }
+        .card-R { background: linear-gradient(135deg, #7f8c8d, #2c3e50); }
+        .card-N { background: linear-gradient(135deg, #bdc3c7, #7f8c8d); color: #2c3e50; border: 1px solid #95a5a6; }
+        
+        .gacha-title { color: white; font-size: 24px; margin-bottom: 20px; letter-spacing: 2px;}
+        .gacha-btn { margin-top: 30px; padding: 15px 40px; font-size: 20px; font-weight: bold; background: #e74c3c; color: white; border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 4px #c0392b; transition: 0.2s;}
+        .gacha-btn-collect { background: #3498db; box-shadow: 0 4px #2980b9; }
+
+        #collection-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95);
+            display: none; justify-content: flex-start; align-items: center; flex-direction: column; z-index: 300; padding-top: 30px; overflow-y: auto;
+        }
+        .collection-header { color: #f1c40f; font-size: 28px; margin-bottom: 10px; text-shadow: 0 0 10px #f39c12; }
+        
+        .pack-section-title { width: 90%; max-width: 800px; text-align: left; font-size: 20px; color: #34db98; margin: 20px 0 10px 0; border-bottom: 2px solid #2c3e50; padding-bottom: 5px; }
+        
+        .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; width: 90%; max-width: 800px; padding-bottom: 20px;}
+        .mini-card { background: #2c3e50; border-radius: 10px; padding: 10px; text-align: center; border: 2px solid #34495e; position: relative; }
+        .mini-card img { width: 100%; border-radius: 5px; margin-bottom: 10px; aspect-ratio: 1/1; object-fit: cover; }
+        .mini-card .name { font-size: 14px; font-weight: bold; color: white; line-height: 1.2;}
+        .mini-card .count { position: absolute; top: -10px; right: -10px; background: #e74c3c; color: white; border-radius: 50%; width: 30px; height: 30px; display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 14px; border: 2px solid #fff; z-index: 10; }
+        
+        .mini-card.unowned { border-color: #555; background: #1a252f; }
+        .mini-card.unowned img { filter: grayscale(100%) brightness(0.4); opacity: 0.6; }
+        .mini-card.unowned .name { color: #7f8c8d; }
+        
+        .btn-synth { margin-top: 8px; padding: 6px 0; font-size: 13px; background: #e67e22; color: white; border: none; border-radius: 5px; cursor: pointer; width: 100%; font-weight: bold; animation: pulse 1.5s infinite; }
+        .btn-synth:hover { background: #d35400; }
+        .btn-synth-sr { background: #9b59b6; box-shadow: 0 0 10px #9b59b6; animation: pulse-sr 1.2s infinite; }
+        .btn-synth-sr:hover { background: #8e44ad; }
+        
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(230, 126, 34, 0.7); } 70% { box-shadow: 0 0 0 8px rgba(230, 126, 34, 0); } 100% { box-shadow: 0 0 0 0 rgba(230, 126, 34, 0); } }
+        @keyframes pulse-sr { 0% { box-shadow: 0 0 0 0 rgba(155, 89, 182, 0.8); } 70% { box-shadow: 0 0 0 10px rgba(155, 89, 182, 0); } 100% { box-shadow: 0 0 0 0 rgba(155, 89, 182, 0); } }
+        
+        .close-btn { margin-top: 20px; padding: 10px 30px; font-size: 18px; background: #95a5a6; color: white; border: none; border-radius: 8px; cursor: pointer; margin-bottom: 50px;}
+    </style>
+</head>
+<body>
+
+    <div id="correct-splash">⭕ 正確！</div>
+
+    <div id="gacha-overlay">
+        <div class="gacha-title" id="gacha-title">✨ 連擊達成！獲得抽卡機會！ ✨</div>
+        <button class="gacha-btn" id="pre-draw-btn" onclick="executeDraw()">👉 點擊抽卡 👈</button>
+        <div class="gacha-card" id="revealed-card" style="display:none;">
+            <img id="card-image" src="" style="width: 100%; max-height: 220px; object-fit: cover; border-radius: 10px; margin-bottom: 15px; display: none;">
+            <div id="card-name" style="font-size: 20px; line-height: 1.2;">卡片名稱</div>
+        </div>
+        <button class="gacha-btn gacha-btn-collect" id="post-draw-btn" onclick="closeGacha()" style="display:none;">收下神卡並繼續</button>
+    </div>
+
+    <div id="collection-modal">
+        <div class="collection-header" id="collection-title">🏆 專屬集卡冊</div>
+        <div id="collection-content" style="width: 100%; display: flex; flex-direction: column; align-items: center;">
+        </div>
+        <button class="close-btn" onclick="closeCollection()">返回首頁</button>
+    </div>
+
+    <div class="container">
+        <div id="student-setup">
+            <h1>🎒 數位邏輯設計大挑戰：抽卡特訓班！</h1>
+            <div class="subtitle">連續答對 2 題即可抽卡！(滿5張特定卡可覺醒神卡)</div>
+            
+            <div class="warning-box">
+                ⚠️ 注意：請先輸入姓名並點擊【☁️ 1. 載入雲端圖鑑存檔】，再開始挑戰！否則辛苦抽到的卡片紀錄會被洗掉喔！
+            </div>
+
+            <input type="text" id="student-name" placeholder="請輸入 班級+座號+姓名">
+            
+            <div class="pack-selector-container">
+                <div class="pack-selector-title">👇 請選擇本次測驗的專屬抽卡包 👇</div>
+                <div class="pack-grid" id="pack-selector"></div>
+            </div>
+            
+            <button class="btn" id="btn-sync" style="background-color: #2980b9; box-shadow: 0 4px #1c5980;" onclick="syncCloudData()">☁️ 1. 載入雲端圖鑑存檔</button>
+            <button class="btn btn-start" onclick="startGame()">▶️ 2. 開始大挑戰</button>
+            <button class="btn btn-collection" onclick="openCollection()">📖 查看我的圖鑑進度</button>
+        </div>
+
+        <div id="game-area">
+            <div class="status-bar">
+                <div class="hp-bar" id="hp-display">
+                    <span id="hearts">❤️❤️❤️</span>
+                    <span class="streak-badge" id="streak-display">🔥 連擊: 0 / 2</span>
+                </div>
+                <div class="inventory" id="inventory-display">🎒 本局卡簿: 空</div>
+            </div>
+            <div class="tag" id="q-tag">標籤</div>
+            <div class="question-text" id="q-text">題目載入中...</div>
+            <div id="options-area"></div>
+        </div>
+
+        <div id="result-area">
+            <h1>測驗完成！🎉</h1>
+            <p>戰利品已自動存入集卡冊，診斷報告已傳送給老師。</p>
+            <div id="log-report"></div>
+            <button class="btn btn-collection" style="margin-top:20px;" onclick="location.reload()">返回首頁查看集卡冊</button>
+        </div>
+    </div>
+
+    <script>
+        // === 音效引擎 ===
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+        function initAudio() { 
+            if (!audioCtx) audioCtx = new AudioContext(); 
+            if (audioCtx.state === 'suspended') audioCtx.resume(); 
+        }
+        function playSound(type) {
+            initAudio();
+            const now = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            
+            if (type === 'correct') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(800, now); osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
+                gain.gain.setValueAtTime(0.3, now); osc.start(now); osc.stop(now + 0.15);
+            } else if (type === 'wrong') {
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, now); osc.frequency.exponentialRampToValueAtTime(80, now + 0.3);
+                gain.gain.setValueAtTime(0.3, now); osc.start(now); osc.stop(now + 0.3);
+            } else if (type === 'draw') {
+                osc.type = 'square'; osc.frequency.setValueAtTime(400, now); osc.frequency.linearRampToValueAtTime(800, now + 0.5);
+                gain.gain.setValueAtTime(0.2, now); osc.start(now); osc.stop(now + 0.5);
+            } else if (type === 'synth') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(300, now); 
+                osc.frequency.linearRampToValueAtTime(600, now + 0.3);
+                osc.frequency.linearRampToValueAtTime(1200, now + 0.6);
+                gain.gain.setValueAtTime(0.4, now); osc.start(now); osc.stop(now + 0.7);
+            }
+        }
+
+        // ==========================================
+        // 📦 系統擴充：四階段卡包完整架構
+        // ==========================================
+        const cardPacks = {
+            "phase1": {
+                name: "⚡ 第一階段",
+                cards: [
+                    //{ id: "c_sp1", name: "【SP】超古代覺醒・裂空座", rarity: "SP", chance: 0, image: "images/SP1.jpg" },
+{ id: "c_sp1", name: "【SP】晶圓代工龍頭・台積電", rarity: "SP", chance: 0, image: "images/SP1.jpg", pblTask: "【實作挑戰】請翻開課本，向老師解釋何謂『電晶體的交換區』即可索取密碼！", unlockCode: "5555" },
+            { id: "c_sp2", name: "【SP】微處理器之祖・基爾比", rarity: "SP", chance: 0, image: "images/MJ_UR.jpg", pblTask: "【實作挑戰】請到黑板寫下十進位 10 轉二進位的計算過程，即可向老師索取密碼！", unlockCode: "2000" },
+                    { id: "c1", name: "【UR】暗黑・洛奇亞", rarity: "UR", chance: 0.375, image: "images/UR1.jpg" },
+                    { id: "c2", name: "【UR】光明・洛奇亞", rarity: "UR", chance: 0.375, image: "images/UR2.jpg" },
+                    { id: "c3", name: "【UR】光明・鳳王", rarity: "UR", chance: 0.375, image: "images/UR3.jpg" },
+                    { id: "c4", name: "【UR】對戰・鳳王", rarity: "UR", chance: 0.375, image: "images/UR4.jpg" },
+                    { id: "c5", name: "【UR】期間限定・Twice", rarity: "UR", chance: 0.375, image: "images/UR5.png" },
+                    { id: "c6", name: "【UR】籃球之神・喬丹", rarity: "UR", chance: 0.375, image: "images/MJ_UR.png" },
+                    { id: "c31", name: "【UR】期間限定・子瑜", rarity: "UR", chance: 0.375, image: "images/UR6.png" },
+                    { id: "c32", name: "【UR】期間限定・娜璉", rarity: "UR", chance: 0.375, image: "images/UR7.png" },
+                    { id: "c7", name: "【SSR】全圖洛奇亞", rarity: "SSR", chance: 1.5, image: "images/SSR1.jpg" },
+                    { id: "c8", name: "【SSR】異色洛奇亞", rarity: "SSR", chance: 1.5, image: "images/SSR2.jpg" },
+                    { id: "c9", name: "【SSR】浮雕洛奇亞", rarity: "SSR", chance: 1.5, image: "images/SSR3.jpg" },
+                    { id: "c10", name: "【SSR】全圖鳳王", rarity: "SSR", chance: 1.5, image: "images/SSR4.jpg" },
+                    { id: "c11", name: "【SSR】三分神射・Curry", rarity: "SSR", chance: 1.5, image: "images/SC_SSR.png" },
+                    { id: "c12", name: "【SSR】死神・KD", rarity: "SSR", chance: 1.5, image: "images/KD_SSR.png" },
+                    { id: "c13", name: "【SR】洛奇亞ex", rarity: "SR", chance: 3.0, image: "images/SR1.jpg" },
+                    { id: "c14", name: "【SR】鳳王ex", rarity: "SR", chance: 3.0, image: "images/SR2.jpg" },
+                    { id: "c15", name: "【SR】浴火狀元・康寧漢", rarity: "SR", chance: 3.0, image: "images/CC_SR.png" },
+                    { id: "c16", name: "【SR】鬍鬚張・哈登", rarity: "SR", chance: 3.0, image: "images/JH_SR.png" },
+                    { id: "c17", name: "【SR】城堡哥・Stephon Castle", rarity: "SR", chance: 3.0, image: "images/SC_SR.png" },
+                    { id: "c18", name: "【R】洛奇亞", rarity: "R", chance: 4.0, image: "images/R1.jpg" },
+                    { id: "c19", name: "【R】鳳王", rarity: "R", chance: 4.0, image: "images/R2.jpg" },
+                    { id: "c20", name: "【R】NBA陳奕迅・Tuner", rarity: "R", chance: 4.0, image: "images/MT_R.png" },
+                    { id: "c21", name: "【R】拳王・追夢綠", rarity: "R", chance: 4.0, image: "images/DG_R.png" },
+                    { id: "c22", name: "【R】泳池派對・普爾", rarity: "R", chance: 4.0, image: "images/JP_R.png" },
+                    { id: "c23", name: "【R】冷凍王・苦命家", rarity: "R", chance: 4.0, image: "images/JK_R.png" },
+                    { id: "c24", name: "【N】小山豬", rarity: "N", chance: 7.0, image: "images/N1.jpg", synthTarget: "c_sp1" },
+                    { id: "c25", name: "【N】阿羅拉小拳石", rarity: "N", chance: 7.0, image: "images/N2.jpg", synthTarget: "c_sp1" },
+                    { id: "c26", name: "【N】小火龍", rarity: "N", chance: 7.0, image: "images/N3.jpg", synthTarget: "c_sp1" },
+                    { id: "c27", name: "【N】阿羅拉烏波", rarity: "N", chance: 7.0, image: "images/N4.jpg", synthTarget: "c_sp1" },
+                    { id: "c28", name: "【N】愛吃豚", rarity: "N", chance: 7.0, image: "images/N5.jpg", synthTarget: "c_sp1" },
+                    { id: "c29", name: "【N】原野水母", rarity: "N", chance: 7.0, image: "images/N6.jpg", synthTarget: "c_sp1" },
+                    { id: "c30", name: "【N】光蚵仔", rarity: "N", chance: 7.0, image: "images/N7.jpg", synthTarget: "c_sp1" },
+// 🤖 特殊成就獎勵卡 (不加入隨機抽卡池中)
+            { id: "p1_ai", name: "【AI】Gemini 戰術教練卡", rarity: "AI", chance: 0, image: "images/UR4.png" },
+            { id: "p1_god", name: "【頂級神人】超越極限・零誤差封神", rarity: "GOD", chance: 0, image: "images/UR5.png" }
+                ]
+            }
+        };
+
+// ==========================================
+// 數位邏輯特訓：第一章 基本概念 20 題完整題庫
+// ==========================================
+const quizData = {
+    // --- 第 1 題 ---
+    "q1": {
+        tag: "數量表示法：連續與不連續",
+        text: "在日常生活與工業量測中，如果某個數值的變化對於時間而言是「漸進式、連續且平滑」的（例如汽車時速從 $0$ 慢慢加速到 $100\\text{ km/hr}$），這屬於哪一種表示法？",
+        options: [
+            { text: "類比表示法", next: "q2", isCorrect: true },
+            { text: "數位表示法", next: "q1_help", log: "Q1錯：未分清類比為連續、數位為跳躍" },
+            { text: "二進位表示法", next: "q1_help", log: "Q1錯：誤將計數進位制當成波形連續特性" },
+            { text: "不連續表示法", next: "q1_help", log: "Q1錯：不連續法是數位的別稱喔" }
+        ]
+    },
+    "q1_help": {
+        tag: "💊 PBL 救援任務：大自然的時間",
+        text: "【救援提示】先給你一個溫暖的應援！別灰心，我們一起把這分拿回來！大自然的物理量（像氣溫從 $25^{\\circ}\\text{C}$ 升到 $28^{\\circ}\\text{C}$）是一度度慢慢爬升的，這種「連續、平滑」的特徵，在電子學上就叫作？",
+        aiPrompt: "先給你一個大抱抱！我是你的專屬 AI 線上應援。老師發現你這題不小心選錯了，這題連很多學長一開始都會搞混喔！請扮演最溫柔的引導大哥哥，絕對不要直接給我最終答案，用生活中的『爬樓梯』或『走斜坡』做比喻，陪我分清什麼是類比的「連續」與數位的「不連續」吧！",
+        aiUrl: "https://gemini.google.com/",
+        options: [
+            { text: "類比表示法", next: "q1", isCorrect: true },
+            { text: "數位表示法", next: "q1_help", log: "Q1救援錯：提示後仍無法分辨連續即為類比" }
+        ]
+    },
+
+    // --- 第 2 題 ---
+    "q2": {
+        tag: "數量表示法：實習儀器判斷",
+        text: "我們在電子實習課常常使用的「指針式三用電表」或「傳統指針鐘錶」，其數值是靠指針偏轉的連續弧度來讀取。請問這屬於何種表示法？",
+        options: [
+            { text: "類比表示法", next: "q3", isCorrect: true },
+            { text: "數位表示法", next: "q2_help", log: "Q2錯：誤以為電表結構一律是數位" },
+            { text: "七段顯示器表示法", next: "q2_help", log: "Q2錯：指針電表沒有發光數字螢幕喔" },
+            { text: "階梯式表示法", next: "q2_help", log: "Q2錯：指針移動是平滑的而非階梯突變" }
+        ]
+    },
+    "q2_help": {
+        tag: "💊 PBL 救援任務：指針的軌跡",
+        text: "【救援提示】嗨！沒關係，卡關是變強的開始！請看著指針的移動，當它從刻度 $10$ 擺動到 $20$ 時，是不是必須「滑行」經過中間每一條小刻度，而不能瞬間消失再出現？這種滑行連續的特性是？",
+        aiPrompt: "別怕，這題我們一起拆解！我是你的 AI 學習神隊友。請扮演一個很有耐心的實習大姊姊，不要直接公佈答案。請用『傳統有指針的體重計』跟『直接亮數字的電子體重計』當例子，溫柔引導我搞懂為什麼傳統指針儀器是類比系統。",
+        aiUrl: "https://gemini.google.com/",
+        options: [
+            { text: "類比表示法", next: "q2", isCorrect: true },
+            { text: "數位表示法", next: "q2_help", log: "Q2救援錯：仍將傳統指針結構與數位搞混" }
+        ]
+    },
+
+    // --- 第 3 題 ---
+    "q3": {
+        tag: "數量表示法：數位法別稱",
+        text: "電子體溫計的螢幕上直接亮出了大大的發光數字 $36.5$，這種將數值轉換成十進位直接顯示、且訊號變化屬於「階梯式跳躍、不連續」的數量法，又稱為什麼法？",
+        options: [
+            { text: "不連續法", next: "q4", isCorrect: true },
+            { text: "連續法", next: "q3_help", log: "Q3錯：連續法是類比表示法的別稱" },
+            { text: "正弦法", next: "q3_help", log: "Q3錯：正弦波是平滑連續的，屬於類比" },
+            { text: "放大法", next: "q3_help", log: "Q3錯：放大是類比運算放大器的特徵" }
+        ]
+    },
+    "q3_help": {
+        tag: "💊 PBL 救援任務：跳躍的數字",
+        text: "【救援提示】伸出手指幫你加油！電子體溫計從 $36.5^{\\circ}\\text{C}$ 跳到 $36.6^{\\circ}\\text{C}$ 的一瞬間，螢幕是「啪」一聲直接跳過去的，中間那些無限多個小數點都不會顯示出來。因為這種訊號缺乏中間過渡、是一步步跳躍的，所以叫作？",
+        aiPrompt: "哈囉！不要給自己太大壓力，我們慢慢來。請扮演一位超級溫暖的電子科老師，絕對不要直接說出答案。請用最白話的日常語言，跟我解釋為什麼科學家會把數位的世界稱為「不連續法」，並給我信心！",
+        aiUrl: "https://gemini.google.com/",
+        options: [
+            { text: "不連續法", next: "q3", isCorrect: true },
+            { text: "連續法", next: "q3_help", log: "Q3救援錯：經跳躍特性提示後仍誤選連續法" }
+        ]
+    },
+
+    // --- 第 4 題 ---
+    "q4": {
+        tag: "類比系統：最具代表性的波形",
+        text: "在類比系統（連續時間系統）中，自然界的物理量多以漸進的方式改變。請問在電子學與數位邏輯中，最具代表性的「類比訊號波形」是下列何者？",
+        options: [
+            { text: "正弦波", next: "q5", isCorrect: true },
+            { text: "方波", next: "q4_help", log: "Q4錯：方波是有直角的數位代表波形" },
+            { text: "脈波", next: "q4_help", log: "Q4錯：脈波是數位的時脈訊號波形" },
+            { text: "階梯波", next: "q4_help", log: "Q4錯：階梯波代表跳躍突變，屬於數位" }
+        ]
+    },
+    "q4_help": {
+        tag: "💊 PBL 救援任務：如海浪般流暢",
+        text: "【救援提示】擊個掌！放輕鬆。最具代表性的類比訊號，長得就像平滑起伏的海浪一樣，有著優美的完美曲線，沒有任何尖銳的直角或突變。這個在電子學裡最常聽到的基本波形叫做？",
+        aiPrompt: "放輕鬆，這題我們一定能弄懂！請扮演我的 AI 伴學夥伴。這題題目問的是最經典的類比波形，請不要直接揭曉答案。請用生活中的『海浪起伏』或『盪鞦韆的軌跡』，引導我找出「正弦波」這個答案。",
+        aiUrl: "https://gemini.google.com/",
+        options: [
+            { text: "正弦波", next: "q4", isCorrect: true },
+            { text: "方波", next: "q4_help", log: "Q4救援錯：提示平滑曲線後仍誤選帶有直角的方波" }
+        ]
+    },
+
+    // --- 第 5 題 ---
+    "q5": {
+        tag: "數位系統：最具代表性的波形",
+        text: "數位系統中，數位電路處理的是非連續性訊號，訊號可以在極短時間內產生極大的跳躍變化量。請問最具代表性的「數位訊號波形」是下列何者？",
+        options: [
+            { text: "方波與脈波", next: "q6", isCorrect: true },
+            { text: "正弦波", next: "q5_help", log: "Q5錯：正弦波是類比訊號的化身" },
+            { text: "語音訊號", next: "q5_help", log: "Q5錯：人類在空氣中說話的聲波是連續的類比訊號" },
+            { text: "三角波", next: "q5_help", log: "Q5錯：三角波雖然有角，但電壓是連續斜坡上升的" }
+        ]
+    },
+    "q5_help": {
+        tag: "💊 PBL 救援任務：城堡的城牆",
+        text: "【救援提示】沒關係，再試一次！最具代表性的數位波形，長得非常規則、直上直下，看起來就像「城堡的方形城牆」一樣。它代表著邏輯只有高、低兩種狀態的瞬間切換。它的名字叫作？",
+        aiPrompt: "別灰心，我們一起突破這關！請扮演一位非常幽默的電路課助教，不要直接告訴我答案。請用『開關燈瞬間電壓的跳竄』，用最白話、好笑的方法引導我了解為什麼「方波與脈波」是數位的專屬標誌。",
+        aiUrl: "https://gemini.google.com/",
+        options: [
+            { text: "方波與脈波", next: "q5", isCorrect: true },
+            { text: "正弦波", next: "q5_help", log: "Q5救援錯：依然未能區分正弦波與方波的硬體含義" }
+        ]
+    },
+
+    // --- 第 6 題 ---
+    "q6": {
+        tag: "系統比較：讀數的人為誤差",
+        text: "根據課本分析，我們在讀取傳統指針電表時，若視線由左向右斜視或由右向左斜視，會產生讀數人為誤差。請問改用哪一種電表，就能「完全不會有觀測角度的誤差」？",
+        options: [
+            { text: "數位式電表", next: "q7", isCorrect: true },
+            { text: "類比式電表", next: "q6_help", log: "Q6錯：傳統類比指針表才會有觀測角度誤差" },
+            { text: "運算放大器電表", next: "q6_help", log: "Q6錯：這是純類比放大電路，非解決誤差的電表" },
+            { text: "水銀式儀表", next: "q6_help", log: "Q6錯：水銀高度看歪一樣會有視差喔" }
+        ]
+    },
+    "q6_help": {
+        tag: "💊 PBL 救援任務：眼睛不會騙人",
+        text: "【救援提示】給你一個充滿能量的微笑！傳統電表因為指針跟底部的刻度盤有一段距離，看歪了數字就會偏掉。但如果是那種直接用液晶螢幕秀出清楚數字（例如 $124.27$）的儀器，不管從哪裡看數字都不會變。這叫作什麼電表？",
+        aiPrompt: "這題連老師一開始都想了一下，別氣餒！請扮演一個很有親和力的實習學長，不要直接把答案寫出來。請用生活裡看『傳統大時鐘的指針』和看『手機上的數位時間』做對比，溫柔帶我找出答案吧！",
+        aiUrl: "https://gemini.google.com/",
+        options: [
+            { text: "數位式電表", next: "q6", isCorrect: true },
+            { text: "類比式電表", next: "q6_help", log: "Q6救援_help錯：提示數字螢幕後仍舊混淆類比與數位" }
+        ]
+    },
+
+    // --- 第 7 題 ---
+    "q7": {
+        tag: "類比系統：精密性的比較",
+        text: "課本提到，指針電表量測時，最後一位往往是「操作者手動估計的值」，有效位數較少；而當使用 $5\\frac{1}{2}$ 位的數位電表測量時，可直接亮出如 $124.273$ 的數據，這代表數位系統具備何種特性？",
+        options: [
+            { text: "精密性較高", next: "q8", isCorrect: true },
+            { text: "功率消耗較大", next: "q7_help", log: "Q7錯：這裡討論的是位數與準確度，非省電功率" },
+            { text: "抗雜訊能力較差", next: "q7_help", log: "Q7錯：數位系統的抗雜訊能力其實比類比更好，且與這題無關" },
+            { text: "精密性較低", next: "q7_help", log: "Q7錯：能量到小數點後更多位，代表精密性更強才對" }
+        ]
+    },
+    "q7_help": {
+        tag: "💊 PBL 救援任務：看誰量得細",
+        text: "【救援提示】摸摸頭，放鬆一下。傳統指針我們用肉眼看，頂多只能猜個大概（例如約 $124$）。但數位儀器可以幫我們精準量到小數點後面第二位、第三位（例如 $124.273$）。能看得「更細微、更準確」，在科學上叫作？",
+        aiPrompt: "不要挫折，我們一步步來！請扮演貼心的 AI 應援。請不要直接給我最終答案，用『拿普通文具尺量螞蟻』跟『拿科學游標卡尺量螞蟻』的差別，引導我理解為什麼能秀出更多有效位數代表「精密性較高」。",
+        aiUrl: "https://gemini.google.com/",
+        options: [
+            { text: "精密性較高", next: "q7", isCorrect: true },
+            { text: "精密性較低", next: "q7_help", log: "Q7救援錯：提示精細位數後仍誤選精密性低" }
+        ]
+    },
+
+    // --- 第 8 題 ---
+    "q8": {
+        tag: "電路運作：運算放大器的缺點",
+        text: "基本類比電路以「運算放大器（OP Amp）」為代表，其內部電晶體工作在作用區。請問這個區域「最容易受到下列哪一個環境因素的干擾」，進而造成電路輸出不穩定？",
+        options: [
+            { text: "溫度", next: "q9", isCorrect: true },
+            { text: "濕度", next: "q8_help", log: "Q8錯：雖然濕度有影響，但課本特別點出特性曲線最怕溫度" },
+            { text: "高度", next: "q8_help", log: "Q8錯：電路運作與海拔高度無關" },
+            { text: "大氣壓力", next: "q8_help", log: "Q8錯：大氣壓力非影響作用區工作點漂移的主因" }
+        ]
+    },
+    "q8_help": {
+        tag: "💊 PBL 救援任務：電晶體怕熱",
+        text: "【救援提示】沒關係，這題稍微難一點，我們一起克服！基本類比電路（OP Amp）在工作時，內部的半導體晶片對「周圍環境的冷熱變化」超級敏感，一旦發熱工作點就會跑掉。所以它最怕？",
+        aiPrompt: "沒關係，錯了代表我們又抓出一個盲點！請扮演超有耐心的數位邏輯助教，不要直接告訴我答案。請幫我查閱課本第 4 頁關於運算放大器（OP Amp）的描述，用白話文解釋為什麼電晶體的作用區容易受到「溫度」的影響？",
+        aiUrl: "https://gemini.google.com/",
+        options: [
+            { text: "溫度", next: "q8", isCorrect: true },
+            { text: "濕度", next: "q8_help", log: "Q8救援錯：提示冷熱敏感後仍舊選擇濕度" }
+        ]
+    },
+
+    // --- 第 9 題 ---
+    "q9": {
+        tag: "交換電路：數位電路的工作區",
+        text: "數位電路的基本元件是邏輯閘，其電晶體主要工作在特性曲線的「截止區」與「飽和區」，這兩個區域在數位系統中又合稱為什麼區？",
+        options: [
+            { text: "交換區", next: "q10", isCorrect: true },
+            { text: "主動區", next: "q9_help", log: "Q9錯：主動區（作用區）是類比電路在用的" },
+            { text: "放大區", next: "q9_help", log: "Q9錯：放大區無法實現數位的開關切換" },
+            { text: "線性區", next: "q9_help", log: "Q9錯：線性區非截止與飽和的二態合稱" }
+        ]
+    },
+    "q9_help": {
+        tag: "💊 PBL 救援任務：開關的切換",
+        text: "【救援提示】加油，你已經挑戰到第 9 題了，非常厲害！數位的截止（完全關閉）與飽和（完全導通），就像電燈開關在兩種狀態之間「互相切換、彼此交替」。這個切換的動作，在工程上就稱為？",
+        aiPrompt: "做得好！點開 AI 代表你很有上進心。請扮演一位溫柔的電子工程師大哥哥，不要直接說出最終答案。請用『切換電燈開關（Switch）』的動作，引導我理解為什麼截止區與飽和區會被稱為「交換區（交換電路）」。",
+        aiUrl: "https://gemini.google.com/",
+        options: [
+            { text: "交換區", next: "q9", isCorrect: true },
+            { text: "主動區", next: "q9_help", log: "Q9救援錯：提示開關切換後仍選類比用的主動區" }
+        ]
+    },
+
+    // --- 第 10 題 ---
+    "q10": {
+        tag: "訊號轉換：自動控制方塊圖",
+        text: "在課本第 5 頁的自動控制方塊圖中，利用感測器將大自然的物理量轉為電壓後，首先必須經過哪一種電路，才能將類比信號轉為數位信號送入控制處理單元？",
+        options: [
+            { text: "ADC", next: "q11", isCorrect: true },
+            { text: "DAC", next: "q10_help", log: "Q10錯：DAC 是將數位轉回類比，方向反了" },
+            { text: "TTL", next: "q10_help", log: "Q10錯：TTL 是一種 IC 內部製程規格技術" },
+            { text: "OP Amp", next: "q10_help", log: "Q10錯：運算放大器無法單獨把類比訊號變成二進位" }
+        ]
+    },
+    "q10_help": {
+        tag: "💊 PBL 救援任務：轉譯成電腦懂的語言",
+        text: "【救援提示】半場休息，我們一起把觀念釐清！要把大自然的『類比（Analog）』訊號，轉成電腦看得懂的『數位（Digital）』訊號，這個轉換器的英文縮寫順序應該是？",
+        aiPrompt: "別慌，我們一起看看自動控制圖！請扮演我的專屬學習鷹架。請不要直接給我答案，用課本第 5 頁的圖 1-4 內容，引導我了解為什麼『類比對數位轉換器』的簡稱是「ADC」。",
+        aiUrl: "https://gemini.google.com/",
+        options: [
+            { text: "ADC", next: "q10", isCorrect: true },
+            { text: "DAC", next: "q10_help", log: "Q10救援錯：方向依然混淆，誤選數位對類比轉換器" }
+        ]
+    },
+
+    // --- 第 11 題 ---
+    "q11": {
+        tag: "訊號轉換：控制輸出的最後一步",
+        text: "承上題，控制單元計算出精確的回應值後，必須經過哪一種電路，才能將「數位訊號」轉回「類比訊號」，去驅動變頻壓縮機等控制機構？",
+        options: [
+            { text: "DAC", next: "q12", isCorrect: true },
+            { text: "ADC", next: "q11_help", log: "Q11錯：ADC 是類比轉數位，上題才剛考過喔" },
+            { text: "CPLD", next: "q11_help", log: "Q11錯：CPLD 是可程式邏輯晶片，不是訊號轉換器" },
+            { text: "GND", next: "q11_help", log: "Q11錯：GND 是接地（0V），不是轉換電路" }
+        ]
+    },
+    "q11_help": {
+        tag: "💊 PBL 救援任務：從晶片回到現實",
+        text: "【救援提示】沒關係，這兩個轉換器本來就很像！這次任務是要把晶片算好的『數位（Digital）』結果，變回大自然接收的『類比（Analog）』波形。所以簡寫開頭一定是代表數位的 D，它是？",
+        aiPrompt: "跟著我一起深呼吸，我們一起把這題答對！請扮演一位非常幽默的資深科技廠工程師，不要直接講答案。請用『電腦裡的MP3數位檔案』如何變回『喇叭播放出來的類比聲音』，引導我找出「DAC」這個轉換電路。",
+        aiUrl: "https://gemini.google.com/",
+        options: [
+            { text: "DAC", next: "q11", isCorrect: true },
+            { text: "ADC", next: "q11_help", log: "Q11救援錯：依然混淆數模（DAC）與模數（ADC）的轉換方向" }
+        ]
+    },
+
+    // --- 第 12 題 ---
+    "q12": {
+        tag: "邏輯準位：高低電壓的定義",
+        text: "數位電路的高、低電壓準位又稱為邏輯準位。在沒有特殊說明的「正邏輯系統」下，高電位與低電位分別對應哪一個邏輯值？",
+        options: [
+            { text: "高電位對應邏輯 1，低電位對應邏輯 0", next: "q13", isCorrect: true },
+            { text: "高電位對應邏輯 0，低電位對應邏輯 1", next: "q12_help", log: "Q12錯：這是負邏輯系統的定義喔" },
+            { text: "高電位對應邏輯 5，低電位對應邏輯 0", next: "q12_help", log: "Q12錯：邏輯值只有 0 與 1，沒有 5" },
+            { text: "高電位對應真（True），低電位對應斷路（ON）", next: "q12_help", log: "Q12錯：低電位在正邏輯代表假（False）或 OFF" }
+        ]
+    },
+    "q12_help": {
+        tag: "💊 PBL 救援任務：最符合直覺的設定",
+        text: "【救援提示】伸出雙手幫你打氣！所謂「正」邏輯，就是最符合我們正常人直覺的設定：電位比較「高」的，就給它比較大、代表成立的數字；電位比較「低」的，就給它代表關閉的數字。所以對應是？",
+        aiPrompt: "太好了！你願意點開 AI 提詞，代表你一定會學得很好。請扮演我的線上數位邏輯專屬家教。請不要直接給我最終答案，用最溫柔的方式跟我解釋為什麼正邏輯中「高電位就是1、低電位就是0」？",
+        aiUrl: "https://gemini.google.com/",
+        options: [
+            { text: "高電位對應邏輯 1，低電位對應邏輯 0", next: "q12", isCorrect: true },
+            { text: "高電位對應邏輯 0，低電位對應邏輯 1", next: "q12_help", log: "Q12救援錯：提示正向直覺後仍舊選到負邏輯定義" }
+        ]
+    },
+
+    // --- 第 13 題 ---
+    "q13": {
+        tag: "邏輯準位：反向思維的負邏輯",
+        text: "在某些特殊的軍用或高抗噪數位系統中，會採用「負邏輯」運算。請問負邏輯系統的定義為何？",
+        options: [
+            { text: "高電位對應邏輯 0，低電位對應邏輯 1", next: "q14", isCorrect: true },
+            { text: "高電位對應邏輯 1，低電位對應邏輯 0", next: "q13_help", log: "Q13錯：這是我們最常用的正邏輯" },
+            { text: "高電位對應邏輯 -1，低電位對應邏輯 0", next: "q13_help", log: "Q13錯：數位邏輯世界裡沒有負數 -1 喔" },
+            { text: "高電位對應斷路，低電位對應通路", next: "q13_help", log: "Q13錯：名詞混淆，斷路通常對應低電位" }
+        ]
+    },
+    "q13_help": {
+        tag: "💊 PBL 救援任務：相反的世界",
+        text: "【救援提示】別慌！「負」邏輯顧名思義就是把正邏輯的規則「完全顛倒反過來」。所以原本高電位配 $1$ 就要變成配 $0$；而原本低電位配 $0$ 就要變成配？對，反過來想就對了！",
+        aiPrompt: "別氣餒，我們一起把這個相反的概念弄懂！我是你的 AI 伴學大哥哥。請扮演一個很有耐心的電子工廠領班，不要直接把答案寫出來。請用最口語的方式，引導我理解為什麼高電位配 0、低電位配 1 會被叫作「負邏輯」。",
+        aiUrl: "https://gemini.google.com/",
+        options: [
+            { text: "高電位對應邏輯 0，低電位對應邏輯 1", next: "q13", isCorrect: true },
+            { text: "高電位對應邏輯 1，低電位對應邏輯 0", next: "q13_help", log: "Q13救援錯：顛倒規則後依然選成正邏輯" }
+        ]
+    },
+
+    // --- 第 14 題 ---
+    "q14": {
+        tag: "邏輯參數：四個核心電壓定義",
+        text: "課本第 7 頁介紹了數位 IC 輸出與輸入的四個核心電壓參數。請問參數 $V_{IH}$ 代表的明確物理意義是什麼？",
+        options: [
+            { text: "輸入為高準位時的最低值電壓", next: "q15", isCorrect: true },
+            { text: "輸入為低準位時的最高值電壓", next: "q14_help", log: "Q14錯：輸入低準位最高值是 $V_{IL}$" },
+            { text: "輸出為高準位時的最低值電壓", next: "q14_help", log: "Q14錯：輸出高準位最低值是 $V_{OH}$" },
+            { text: "輸出為低準位時的最高值電壓", next: "q14_help", log: "Q14錯：輸出低準位最高值是 $V_{OL}$" }
+        ]
+    },
+    "q14_help": {
+        tag: "💊 PBL 救援任務：英文縮寫拆解法",
+        text: "【救援提示】這四個專有名詞縮寫看起來超像，但只要拆開英文就超簡單！$V$ 是電壓，中間的 $I$ 是代表「輸入（Input）」，最後面的 $H$ 是代表「高準位（High）」。所以連起來就是輸入高準位的最低門檻電壓，答案是？",
+        aiPrompt: "太棒了，你很有耐心，願意再試一次！請扮演一位非常溫柔的技職體系電子學教授。請不要直接給我答案，用課本第 7 頁的英文字母縮寫定義（Input, High），引導我理解為什麼 $V_{IH}$ 是「輸入為高準位時的最低值電壓」。",
+        aiUrl: "https://gemini.google.com/",
+        options: [
+            { text: "輸入為高準位時的最低值電壓", next: "q14", isCorrect: true },
+            { text: "輸出為高準位時的最低值電壓", next: "q14_help", log: "Q14救援錯：中間的 I（Input）與 O（Output）仍舊混淆" }
+        ]
+    },
+
+    // --- 第 15 題 ---
+    "q15": {
+        tag: "脈波特性：非理想脈波參數",
+        text: "在實際的數位電路世界中，方波並非完美的直角。課本指出，當非理想方波的訊號振幅從「$10\\%$ 慢慢爬升到 $90\\%$」所花費的時間，稱為什麼時間？",
+        options: [
+            { text: "上升時間 $t_r$", next: "q16", isCorrect: true },
+            { text: "下降時間 $t_f$", next: "q15_help", log: "Q15錯：下降時間是振幅從 90% 跌落到 10% 的時間" },
+            { text: "傳輸延遲時間 $t_{pd}$", next: "q15_help", log: "Q15錯：這是訊號從輸入端跑到輸出端的時間差" },
+            { text: "工作週期 $D\\%$", next: "q15_help", log: "Q15錯：工作週期是一個比例百分比，不是單純時間值" }
+        ]
+    },
+    "q15_help": {
+        tag: "💊 PBL 救援任務：訊號正在爬坡",
+        text: "【救援提示】沒關係，我們一起拿下這一題！訊號從很低的 $10\\%$ 位置一路「往上爬坡」到高高在上的 $90\\%$ 位置。既然是在「往上升」，那這個參數的中文名稱一定叫作？",
+        aiPrompt: "別灰心！這題我們一起突破。請扮演一個很擅長帶實習的資深學姊。請不要直接給我答案，用課本第 9 頁的圖 1-9，教我怎麼看非理想脈波，並引導我找出「上升時間 $t_r$（Rise time）」的定義。",
+        aiUrl: "https://gemini.google.com/",
+        options: [
+            { text: "上升時間 $t_r$", next: "q15", isCorrect: true },
+            { text: "下降時間 $t_f$", next: "q15_help", log: "Q15救援錯：提示上升爬坡後仍誤選為下降時間" }
+        ]
+    },
+
+    // --- 第 16 題 ---
+    "q16": {
+        tag: "脈波特性：工作週期的數學計算",
+        text: "數位時脈訊號中，高電位時間長度（脈波寬度）簡寫為 $t_w$，整個大週期的時間簡寫為 $T$。請問「工作週期 $D\\%$」的標準計算公式為何？",
+        options: [
+            { text: "$D\\% = \\frac{t_w}{T} \\times 100\\%$", next: "q17", isCorrect: true },
+            { text: "$D\\% = \\frac{T}{t_w} \\times 100\\%$", next: "q16_help", log: "Q16錯：分子分母放反了，這樣算出來會大於 100% 喔" },
+            { text: "$D\\% = \\frac{t_r}{t_f} \\times 100\\%$", next: "q16_help", log: "Q16錯：這是上升與下降時間，非工作週期公式" },
+            { text: "$D\\% = \\frac{t_{phl} + t_{plh}}{2}$", next: "q16_help", log: "Q16錯：這是計算傳輸延遲時間 $t_{pd}$ 的平均公式" }
+        ]
+    },
+    "q16_help": {
+        tag: "💊 PBL 救援任務：比例的概念",
+        text: "【救援提示】給你一個大大的讚！願意挑戰第 16 題很厲害。工作週期就是問你：「在整個完整的週期時間 $T$ 當中，晶片真正有在亮燈工作（高電位 $t_w$）的時間佔了多少比例？」所以是用部分的 $t_w$ 除以全部的？",
+        aiPrompt: "不要有壓力，我們慢慢看公式！我是你的 AI 伴學神隊友。請扮演一位超會給鼓勵的高職專業科目老師，不要直接給我答案。請用白話文跟我解釋『工作週期就是高電位時間佔據一週期的百分比』，引導我選出正確公式。",
+        aiUrl: "https://gemini.google.com/",
+        options: [
+            { text: "$D\\% = \\frac{t_w}{T} \\times 100\\%$", next: "q16", isCorrect: true },
+            { text: "$D\\% = \\frac{T}{t_w} \\times 100\\%$", next: "q16_help", log: "Q16救援錯：提示部分除以全部後仍舊把分子分母放反" }
+        ]
+    },
+
+    // --- 第 17 題 ---
+    "q17": {
+        tag: "數學基礎：二進位與十進位轉換",
+        text: "在數位系統的二進位表示法中，如果一組訊號的狀態是二進位的 $110_{(2)}$。請問其換算成我們人類習慣看讀的「十進位數值」是多少？",
+        options: [
+            { text: "6", next: "q18", isCorrect: true },
+            { text: "110", "next": "q17_help", log: "Q17錯：110 是眼睛看到的字面十進位讀法，非真正的二進位換算" },
+            { text: "4", "next": "q17_help", log: "Q17錯：二進位 4 的寫法應該是 100" },
+            { text: "3", "next": "q17_help", log: "Q17錯：二進位 3 的寫法應該是 11" }
+        ]
+    },
+    "q17_help": {
+        tag: "💊 PBL 救援任務：加權的秘密",
+        text: "【救援提示】這題我們一步步拆解，超簡單！二進位的數字由右到左加權分別是 $2^0 = 1$、$2^1 = 2$、$2^2 = 4$。現在數值是 $110$，代表我們有 1 個 $4$、1 個 $2$、0 個 $1$。把它們加起來就是？",
+        aiPrompt: "別氣餒！這題學會了，後面進位制轉換你就全通了！請扮演最溫柔的 AI 家教。請不要直接給我最終答案，用最簡單、連小學生都能聽懂的權重展開方式（1個4加上1個2），一步步引導我算出 $110_{(2)} = 6$ 吧！",
+        aiUrl: "https://gemini.google.com/",
+        options: [
+            { text: "6", next: "q17", isCorrect: true },
+            { text: "110", next: "q17_help", log: "Q17救援錯：展開提示後依然未能正確進行二進位權重相加" }
+        ]
+    },
+
+    // --- 第 18 題 ---
+    "q18": {
+        tag: "積體電路認識：IC 的規模分類",
+        text: "我們在實習課常用來接線的 TTL 基本邏輯閘 IC（如 7408 AND 閘、7404 NOT 閘），內部只含有 10 個以下的邏輯閘（電子元件 100 個以下）。請問這在分類上屬於哪一種積體電路？",
+        options: [
+            { text: "小型積體電路 (SSI)", next: "q19", isCorrect: true },
+            { text: "中型積體電路 (MSI)", next: "q18_help", log: "Q18錯：MSI 是中型，內含 10 到 100 個邏輯閘（如解碼器）" },
+            { text: "大型積體電路 (LSI)", next: "q18_help", log: "Q18錯：LSI 是大型，內含數百到上千個邏輯閘（如微處理器）" },
+            { text: "超大型積體電路 (VLSI)", next: "q18_help", log: "Q18錯：VLSI 是超大型，現代複雜晶片均屬之" }
+        ]
+    },
+    "q18_help": {
+        tag: "💊 PBL 救援任務：最基礎的小晶片",
+        text: "【救援提示】伸出手指幫你加油，快到終點了！這類 IC 裡面塞的零件非常少，只有幾顆基本邏輯閘，規模最小。既然是規模最「小」的積體電路，其英文縮寫的第一個字母一定是代表 Small 的？",
+        aiPrompt: "別怕，這題很好拿分！請扮演一位非常風趣的實習課大姊姊。不要直接給我答案，引導我對照課本第 13 頁的表 1-3，看看『元件數 100 個以下、邏輯閘 10 個以下』對應的是不是「小型積體電路 (SSI)」。",
+        aiUrl: "https://gemini.google.com/",
+        options: [
+            { text: "小型積體電路 (SSI)", next: "q18", isCorrect: true },
+            { text: "中型積體電路 (MSI)", next: "q18_help", log: "Q18救援錯：對照提示後仍舊搞錯中型與小型的範圍" }
+        ]
+    },
+
+    // --- 第 19 題 ---
+    "q19": {
+        tag: "積體電路：商用 TTL 的工作電壓",
+        text: "我們在實驗室使用標準的商用通用型 TTL 積體電路（即 74 系列 IC）時，為了維持其正常運作且不燒毀，電源供應器的電壓 $V_{CC}$ 通常必須調整為多少伏特？",
+        options: [
+            { text: "5V", next: "q20", isCorrect: true },
+            { text: "12V", next: "q19_help", log: "Q19錯：12V 電壓太高了，會直接把 74 系列 TTL 晶片燒焦" },
+            { text: "3V", next: "q19_help", log: "Q19錯：3V 雖然適合某些 CMOS，但對傳統 TTL 來說太低無法工作" },
+            { text: "110V", next: "q19_help", log: "Q19錯：110V 是牆壁的交流電，絕對不能直接插在低壓直流晶片上，會爆炸危險" }
+        ]
+    },
+    "q19_help": {
+        tag: "💊 PBL 救援任務：最經典的五伏特",
+        text: "【救援提示】拍拍肩膀！這是一條全數位實習最重要的黃金常識！所有的 74 系列商用 TTL 晶片，工作電壓都被嚴格鎖定在一個固定的直流電壓值，這個伏特數跟我們一般手機 USB 充電孔輸出的電壓一模一樣，就是？",
+        aiPrompt: "沒關係，我們把這個關鍵常識記下來！請扮演電子科實驗室的資深管理員。請不要直接給我答案，用日常生活中『USB 豆腐頭基本輸出電壓』，引導我記住商用 74 系列 TTL 的工作電壓固定是「5V」。",
+        aiUrl: "https://gemini.google.com/",
+        options: [
+            { text: "5V", next: "q19", isCorrect: true },
+            { text: "12V", next: "q19_help", log: "Q19救援錯：提示 USB 電壓常識後仍舊誤選為 12V" }
+        ]
+    },
+
+    // --- 第 20 題 ---
+    "q20": {
+        tag: "晶片族系：CMOS 的突出優點",
+        text: "最後一題！恭喜你堅持到這裡！現代所有的智慧型手機微處理器晶片，幾乎全都是以 CMOS 製程為絕對主流。請問 CMOS 晶片比起傳統 TTL 晶片，最厲害、最符合行動裝置需求的優點是什麼？",
+        options: [
+            { text: "消耗功率極低、抗雜訊能力強", next: "end", isCorrect: true },
+            { text: "工作電壓被嚴格限制只能用 5V", next: "q20_help", log: "Q20錯：CMOS 的工作範圍很廣（3V~18V），限制 5V 的是 TTL" },
+            { text: "完全不需要任何防靜電措施", next: "q20_help", log: "Q20錯：CMOS 是場效構造，非常怕靜電破壞喔" },
+            { text: "扇出數極低，推動能力只有 10 個", next: "q20_help", log: "Q20錯：CMOS 的扇出數非常大（大於 50），推動能力極強" }
+        ]
+    },
+    "q20_help": {
+        tag: "🏆 終極救援任務：手機晶片的祕密",
+        text: "【救援提示】最後一關，我們一起完美的把它拿下來！想想看我們隨身攜帶的手機，晶片最講求的就是「不能太耗電」，否則帶出門一下就沒電了。因此，CMOS 能稱霸現代科技，靠的就是它具備了什麼絕佳特性？",
+        aiPrompt: "哇！你竟然挑戰到最後一題的 AI 應援了，老師為你的毅力感到無比驕傲！請扮演一位非常溫柔的智慧型手機硬體工程師大姊姊，不要直接公佈答案。請用『為什麼手機晶片如果像傳統 TTL 那樣耗電，我們就得出門背一顆大電瓶』的有趣比喻，引導我理解 CMOS「消耗功率極低、抗雜訊強」的致命優點！",
+        aiUrl: "https://gemini.google.com/",
+        options: [
+            { text: "消耗功率極低、抗雜訊能力強", next: "q20", isCorrect: true },
+            { text: "完全不需要任何防靜電措施", next: "q20_help", log: "Q20救援錯：最後一題在省電特性提示下依然選錯" }
+        ]
+    }
+};
+        // ==========================================
+        // 系統變數與遊戲邏輯
+        // ==========================================
+        let studentName = "";
+        let currentStep = "q1"; 
+        let hp = 30; 
+        let currentStreak = 0; 
+        let diagnosticLogs = [];
+        let sessionCards = []; 
+        let failedQuestions = []; 
+        let startTime = 0;           
+        let totalTime = 0;           
+        let rescueTriggered = 0;     
+        let rescueFails = 0;
+        let aiCopyCount = 0; // 記錄學生累計點選複製 AI 提詞的次數
+        let isTransitioning = false; 
+        
+        let currentPackId = "phase4"; 
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initPackSelector();
+        });
+
+        function initPackSelector() {
+            const selector = document.getElementById('pack-selector');
+            if (!selector) return;
+            selector.innerHTML = '';
+            Object.keys(cardPacks).forEach(key => {
+                if (cardPacks[key].cards.length > 0) { 
+                    const div = document.createElement('div');
+                    div.className = `pack-option ${key === currentPackId ? 'active' : ''}`;
+                    div.innerText = cardPacks[key].name;
+                    div.onclick = () => selectPack(key, div);
+                    selector.appendChild(div);
+                }
+            });
+        }
+
+        function selectPack(packId, el) {
+            currentPackId = packId;
+            document.querySelectorAll('.pack-option').forEach(opt => opt.classList.remove('active'));
+            el.classList.add('active');
+        }
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function saveToCollection(cardObj) {
+            let storageKey = "gachaCollection_" + studentName;
+            let pastCollection = JSON.parse(localStorage.getItem(storageKey)) || [];
+            let existingCard = pastCollection.find(c => c.id === cardObj.id);
+            if(existingCard) { existingCard.count += 1; } 
+            else { pastCollection.push({ ...cardObj, count: 1 }); }
+            localStorage.setItem(storageKey, JSON.stringify(pastCollection));
+        }
+
+        function openCollection() {
+            let inputName = document.getElementById('student-name').value.replace(/\s+/g, '');
+            if(!inputName) { alert("請先輸入姓名！"); return; }
+            
+            let storageKey = "gachaCollection_" + inputName;
+            let pastCollection = JSON.parse(localStorage.getItem(storageKey)) || [];
+            
+            let totalUnique = 0;
+            let totalCards = 0;
+            
+            let contentArea = document.getElementById('collection-content');
+            contentArea.innerHTML = "";
+            
+            Object.keys(cardPacks).forEach(packKey => {
+                const pack = cardPacks[packKey];
+                let packNormalPool = pack.cards.filter(c => c.chance > 0);
+                if (packNormalPool.length === 0) return;
+
+                totalCards += packNormalPool.length;
+                
+                let packUnique = packNormalPool.filter(mc => pastCollection.some(pc => pc.id === mc.id)).length;
+                totalUnique += packUnique;
+                
+                contentArea.innerHTML += `<div class="pack-section-title">${pack.name} (${packUnique}/${packNormalPool.length})</div>`;
+                
+                let gridHtml = `<div class="card-grid">`;
+                
+                pack.cards.forEach(masterCard => {
+                    let ownedCard = pastCollection.find(c => c.id === masterCard.id);
+                    if (masterCard.chance === 0 && !ownedCard) return; 
+
+                    if (ownedCard) {
+                        let synthHtml = "";
+                        if (masterCard.synthTarget && ownedCard.count >= 5) {
+                            let btnClass = masterCard.rarity === "SR" ? "btn-synth btn-synth-sr" : "btn-synth";
+                            let btnIcon = masterCard.rarity === "SR" ? "🔥" : "✨";
+                            synthHtml = `<button class="${btnClass}" onclick="synthesizeCard('${masterCard.id}', '${masterCard.synthTarget}')">${btnIcon} 5合1 覺醒</button>`;
+                        }
+
+                        gridHtml += `
+                            <div class="mini-card">
+                                <div class="count">x${ownedCard.count}</div>
+                                <img src="${masterCard.image}" alt="${masterCard.name}">
+                                <div class="name">${masterCard.name}</div>
+                                ${synthHtml}
+                            </div>`;
+                    // === 找到 openCollection 裡的 else 區塊並修改成這樣 ===
+                    } else {
+                        // 🔒 修正：未解鎖的卡片不再直接「劇透」圖片，改為神祕剪影並顯示卡名
+                        gridHtml += `
+                            <div class="mini-card unowned">
+                                <div style="width: 100%; aspect-ratio: 1/1; background: #1a1a2e; border-radius: 5px; margin-bottom: 10px; display: flex; justify-content: center; align-items: center; color: #7f8c8d; font-size: 32px; font-weight: bold; border: 1px dashed #34495e;">?</div>
+                                <div class="name" style="color: #5d6d7e;">${masterCard.name}</div>
+                                <div style="font-size: 11px; color: #e74c3c; margin-top: 4px;">🔒 尚未獲得</div>
+                            </div>`;
+                    }
+                });
+                gridHtml += `</div>`;
+                contentArea.innerHTML += gridHtml;
+            });
+
+            document.getElementById('collection-title').innerText = `🏆 ${inputName} 的圖鑑 (${totalUnique} / ${totalCards})`;
+            document.getElementById('collection-modal').style.display = "flex";
+        }
+
+        function synthesizeCard(materialId, targetSpId) {
+            let inputName = document.getElementById('student-name').value.replace(/\s+/g, '');
+            let storageKey = "gachaCollection_" + inputName;
+            let pastCollection = JSON.parse(localStorage.getItem(storageKey)) || [];
+
+            let materialIndex = pastCollection.findIndex(c => c.id === materialId);
+            if (materialIndex > -1 && pastCollection[materialIndex].count >= 5) {
+                
+                let spMaster = null;
+                for (let packKey in cardPacks) {
+                    let found = cardPacks[packKey].cards.find(c => c.id === targetSpId);
+                    if (found) { spMaster = found; break; }
+                }
+                if (!spMaster) return;
+
+                if (spMaster.pblTask && spMaster.unlockCode) {
+                    let userInput = prompt(`🛑 傳說覺醒任務觸發！🛑\n\n${spMaster.pblTask}\n\n(任務完成後，請向老師索取通關密碼，並輸入於下方：)`);
+                    
+                    if (userInput === null) return; 
+                    else if (userInput.trim() !== spMaster.unlockCode) {
+                        alert("❌ 密碼錯誤！請確認你已經確實完成任務，並向老師取得正確密碼！");
+                        playSound('wrong');
+                        return; 
+                    }
+                }
+
+                pastCollection[materialIndex].count -= 5;
+                
+                let spCardIndex = pastCollection.findIndex(c => c.id === targetSpId);
+                if (spCardIndex > -1) { pastCollection[spCardIndex].count += 1; } 
+                else { pastCollection.push({ ...spMaster, count: 1 }); }
+                
+                localStorage.setItem(storageKey, JSON.stringify(pastCollection));
+                closeCollection();
+                showSynthesisAnimation(spMaster);
+            }
+        }
+
+        function showSynthesisAnimation(spCard) {
+            playSound('synth'); 
+            const overlay = document.getElementById('gacha-overlay');
+            const cardObj = document.getElementById('revealed-card');
+            
+            document.getElementById('pre-draw-btn').style.display = 'none';
+            document.getElementById('gacha-title').innerText = "✨ 碎片融合！傳說覺醒！ ✨";
+            
+            cardObj.className = "gacha-card card-SP"; 
+            document.getElementById('card-image').src = spCard.image; 
+            document.getElementById('card-image').style.display = 'block'; 
+            document.getElementById('card-name').innerText = spCard.name;
+            cardObj.style.display = 'flex';
+            
+            const postBtn = document.getElementById('post-draw-btn');
+            postBtn.innerText = "收下隱藏神卡";
+            postBtn.style.display = 'block';
+            postBtn.onclick = function() {
+                cardObj.style.transform = "scale(0)"; 
+                setTimeout(() => {
+                    overlay.style.display = "none";
+                    postBtn.innerText = "收下神卡並繼續";
+                    postBtn.onclick = closeGacha; 
+                    openCollection(); 
+                }, 300);
+            };
+            overlay.style.display = "flex";
+            setTimeout(() => { cardObj.style.transform = "scale(1)"; }, 100);
+        }
+
+        function closeCollection() { document.getElementById('collection-modal').style.display = "none"; }
+
+        function startGame() {
+            studentName = document.getElementById('student-name').value.replace(/\s+/g, '');
+            if (!studentName) { alert("請先輸入姓名喔！"); return; }
+            startTime = Date.now();
+            initAudio(); 
+            document.getElementById('student-setup').style.display = 'none';
+            document.getElementById('game-area').style.display = 'block';
+            updateStatus();
+            renderQuestion();
+        }
+
+        function renderQuestion() {
+            isTransitioning = false; 
+            if (currentStep === "end") { finishGame(); return; }
+            const q = quizData[currentStep];
+            
+            if(!q) { alert("題目載入錯誤！請檢查 quizData 設定。"); return; }
+
+            document.getElementById('q-tag').innerText = q.tag;
+            document.getElementById('q-text').innerHTML = q.text;
+
+            if (q.tag.includes("救援") || q.tag.includes("提示")) {
+                document.getElementById('q-tag').style.background = "#8e44ad"; 
+                document.body.classList.add('rescue-mode'); 
+            } else {
+                document.body.classList.remove('rescue-mode'); 
+                if (q.tag.includes("流行") || q.tag.includes("放鬆") || q.tag.includes("時間") || q.tag.includes("娛樂") || q.tag.includes("日劇") || q.tag.includes("校園")) {
+                    document.getElementById('q-tag').style.background = "#27ae60"; 
+                } else {
+                    document.getElementById('q-tag').style.background = "#e74c3c"; 
+                }
+            }
+
+            // === 🚨 修正後的 AI 提示箱與一鍵跳轉區塊 ===
+            const oldAiBox = document.getElementById('ai-assistant-box');
+            if (oldAiBox) oldAiBox.remove();
+
+            if (q.aiPrompt) {
+                const aiBox = document.createElement('div');
+                aiBox.id = 'ai-assistant-box';
+                aiBox.style = "background: #16213e; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px dashed #3498db; text-align: left;";
+                
+                let safeUrl = q.aiUrl || "https://gemini.google.com/";
+                
+                // 修正點 1：移除了行內 onclick，改由下方的事件監聽器統一、乾淨地處理
+                aiBox.innerHTML = `
+                    <div style="color: #3498db; font-weight: bold; font-size: 14px; margin-bottom: 8px;">🤖 AI 戰術教練線上應援：</div>
+                    <div style="font-size: 13px; color: #cbd5e1; background: #1a1a2e; padding: 10px; border-radius: 5px; max-height: 80px; overflow-y: auto; margin-bottom: 10px; border: 1px solid #2c3e50;">${q.aiPrompt}</div>
+                    <button class="btn" style="background: #e67e22; box-shadow: 0 4px #b35d10; padding: 10px; font-size: 15px; margin-bottom: 0;" id="ai-action-btn">
+                        📋 複製戰術秘笈並向 Gemini 請教外掛
+                    </button>
+                    <div id="ai-timer-msg" style="color: #e74c3c; font-size: 13px; font-weight: bold; margin-top: 8px; text-align: center; display: none;"></div>
+                `;
+                document.getElementById('game-area').insertBefore(aiBox, document.getElementById('options-area'));
+
+                // 修正點 2：直接綁定事件監聽器，不經過 Base64 轉換，避開任何單雙引號衝突
+                aiBox.querySelector('#ai-action-btn').addEventListener('click', function() {
+                    // 1. 執行複製提詞與新視窗開啟
+                    handleAiAssist(btoa(unescape(encodeURIComponent(q.aiPrompt))), safeUrl);
+
+                    // 2. 啟動 30 秒倒數與作答按鈕鎖定
+                    const optionsArea = document.getElementById('options-area');
+                    const originalButtons = optionsArea.querySelectorAll('button');
+                    originalButtons.forEach(b => b.disabled = true);
+                    
+                    this.disabled = true;
+                    this.style.background = "#7f8c8d";
+                    this.style.boxShadow = "none";
+
+                    let timeLeft = 30;
+                    const timerMsg = document.getElementById('ai-timer-msg');
+                    timerMsg.style.display = "block";
+
+                    const countdown = setInterval(() => {
+                        timerMsg.innerText = `🚨 AI 教練正在傳授破解戰術... 請研讀上方提示，${timeLeft} 秒後解鎖作答按鈕！`;
+                        timeLeft--;
+
+                        if (timeLeft < 0) {
+                            clearInterval(countdown);
+                            timerMsg.style.color = "#2ecc71";
+                            timerMsg.innerText = "✅ 戰術解讀完成！作答通道已解鎖！";
+                            originalButtons.forEach(b => b.disabled = false);
+                            window.aiTimerQualified = true;
+                        }
+                    }, 1000);
+                });
+            } else {
+                window.aiTimerQualified = false;
+            }
+
+            const optionsArea = document.getElementById('options-area');
+            optionsArea.innerHTML = ""; 
+
+            let shuffledOptions = [...q.options];
+            shuffleArray(shuffledOptions);
+            const labels = ["A", "B", "C", "D"];
+
+            shuffledOptions.forEach((opt, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'btn';
+                let cleanText = opt.text.replace(/^[A-D]\.\s*/, "");
+                btn.innerHTML = `${labels[index]}. ${cleanText}`;
+                btn.onclick = () => handleAnswer(opt);
+                optionsArea.appendChild(btn);
+            });
+
+            if (window.MathJax) {
+                MathJax.typesetPromise([document.getElementById('game-area')]).catch((err) => console.log(err.message));
+            }
+        }
+
+        function handleAnswer(selectedOption) {
+            if (isTransitioning) return; 
+            isTransitioning = true; 
+            let isRescueQuestion = currentStep.includes("_help"); 
+
+            if (!selectedOption.isCorrect) {
+                playSound('wrong'); 
+                hp--; if(hp < 0) hp = 0; 
+                currentStreak = 0; 
+                updateStatus();
+                if (selectedOption.log) diagnosticLogs.push(selectedOption.log);
+                
+                if (!failedQuestions.includes(currentStep)) {
+                    failedQuestions.push(currentStep);
+                }
+
+                if (!isRescueQuestion) { rescueTriggered++; } 
+                else { rescueFails++; }
+
+                currentStep = selectedOption.next;
+                renderQuestion();
+            } 
+           else {
+                playSound('correct'); 
+                showCorrectSplash();  
+                
+                // 💡 修正：只有在滿足 30秒強制沉澱冷卻完畢時，答對救援題才計入有效次數
+                if (isRescueQuestion && window.aiTimerQualified) {
+                    aiCopyCount++; 
+                    window.aiTimerQualified = false; // 用完即洗掉
+                }
+
+                if (!isRescueQuestion && !failedQuestions.includes(currentStep)) {
+                    currentStreak++;
+                }
+                // ... (後面接你原本的 setTimeout 換題邏輯)
+
+                setTimeout(() => {
+                    let nextStep = selectedOption.next;
+                    
+                    if (currentStreak >= 2) {
+                        currentStreak = 0; 
+                        currentStep = nextStep;
+                        document.getElementById('gacha-title').innerText = "🔥 二連擊達成！獲得抽卡機會！ ✨";
+                        prepareGacha(); 
+                    } else {
+                        currentStep = nextStep;
+                        renderQuestion();
+                    }
+                    updateStatus();
+                }, 800);
+            }
+        }
+
+        function showCorrectSplash() {
+            const splash = document.getElementById('correct-splash');
+            splash.classList.add('show');
+            setTimeout(() => { splash.classList.remove('show'); }, 600);
+        }
+
+        function updateStatus() {
+            let hpText = hp > 10 ? `❤️ x ${hp}` : "❤️".repeat(hp);
+            document.getElementById('hearts').innerText = hpText;
+            document.getElementById('streak-display').innerText = `🔥 連擊: ${currentStreak} / 2`;
+        }
+
+        function prepareGacha() {
+            const overlay = document.getElementById('gacha-overlay');
+            document.getElementById('pre-draw-btn').style.display = 'block';
+            document.getElementById('revealed-card').style.display = 'none';
+            document.getElementById('post-draw-btn').style.display = 'none';
+            overlay.style.display = "flex";
+        }
+
+        function executeDraw() {
+            playSound('draw'); 
+            document.getElementById('pre-draw-btn').style.display = 'none';
+            document.getElementById('gacha-title').innerText = "🎉 戰利品揭曉 🎉";
+            drawCard(); 
+        }
+
+        function drawCard() {
+            const cardObj = document.getElementById('revealed-card');
+            
+            if (!cardPacks[currentPackId] || cardPacks[currentPackId].cards.length === 0) {
+                alert("⚠️ 目前選擇的卡包尚未準備好，系統自動切換為第一階段！");
+                currentPackId = "phase1";
+            }
+            
+            let currentPool = cardPacks[currentPackId].cards;
+            let drawablePool = currentPool.filter(c => c.chance > 0);
+            
+            let randomNum = Math.random() * 100;
+            let currentLimit = 0;
+            let resultCard = drawablePool[drawablePool.length - 1]; 
+            for (let i = 0; i < drawablePool.length; i++) {
+                currentLimit += drawablePool[i].chance;
+                if (randomNum <= currentLimit) { resultCard = drawablePool[i]; break; }
+            }
+
+            cardObj.className = "gacha-card"; 
+            cardObj.classList.add(`card-${resultCard.rarity}`);
+            document.getElementById('card-image').src = resultCard.image; 
+            document.getElementById('card-image').style.display = 'block'; 
+            document.getElementById('card-name').innerText = resultCard.name;
+            
+            cardObj.style.display = 'flex';
+            document.getElementById('post-draw-btn').style.display = 'block';
+            setTimeout(() => { cardObj.style.transform = "scale(1)"; }, 100);
+
+            sessionCards.push(resultCard.name);
+            saveToCollection(resultCard); 
+            document.getElementById('inventory-display').innerText = `🎒 本局已抽: ${sessionCards.length} 張`;
+        }
+
+        function closeGacha() {
+            const overlay = document.getElementById('gacha-overlay');
+            const cardObj = document.getElementById('revealed-card');
+            cardObj.style.transform = "scale(0)"; 
+            setTimeout(() => {
+                overlay.style.display = "none";
+                renderQuestion(); 
+            }, 300);
+        }
+
+        function finishGame() {
+	// 💡 修正：在遊戲結束時，根據行為進行隱藏特規卡片發放
+            let storageKey = "gachaCollection_" + studentName;
+            let currentCollection = JSON.parse(localStorage.getItem(storageKey)) || [];
+
+            // 👑 檢查是否滿分通關 (hp 沒被扣過，且沒有失敗題目紀錄)
+            if (hp === 30 && failedQuestions.length === 0) {
+                let hasGodCard = currentCollection.some(c => c.id === "p1_god");
+                if (!hasGodCard) {
+                    const godCardMaster = cardPacks.phase1.cards.find(c => c.id === "p1_god");
+                    currentCollection.push({ ...godCardMaster, count: 1 });
+                    alert("🏆 恭喜你達成完美零誤差通關！【頂級神人】專屬榮譽卡已存入你的圖鑑！");
+                }
+            }
+
+            // 🤖 檢查有效 AI 沉澱求助次數是否達 3 次以上
+            if (aiCopyCount >= 3) {
+                let aiCard = currentCollection.find(c => c.id === "p1_ai");
+                if (aiCard) {
+                    aiCard.count++;
+                } else {
+                    const aiCardMaster = cardPacks.phase1.cards.find(c => c.id === "p1_ai");
+                    currentCollection.push({ ...aiCardMaster, count: 1 });
+                }
+                alert("🤖 戰術執行到位！你成功透過 AI 進行了 3 次深度沉澱，獲得【AI】Gemini 戰術教練卡！");
+            }
+
+            localStorage.setItem(storageKey, JSON.stringify(currentCollection));
+            document.getElementById('game-area').style.display = 'none';
+            document.getElementById('result-area').style.display = 'block';
+
+            totalTime = Math.round((Date.now() - startTime) / 1000);
+
+            let reportArea = document.getElementById('log-report');
+            let logText = diagnosticLogs.length === 0 ? "🌟 完美通關，基礎極度扎實！" : "⚠️ 盲點診斷 (請老師留意)：\n" + diagnosticLogs.join("\n");
+            
+            // 報告文字區顯示求助 AI 的次數
+            let finalScoreText = `血量剩餘：${hp}\n🕒 耗時：${totalTime} 秒\n🤖 求助 AI 次數：${aiCopyCount} 次\n🏀 本局共獲得 ${sessionCards.length} 張卡片\n\n`;
+            reportArea.innerText = finalScoreText + logText;
+
+            let itemsText = sessionCards.length > 0 ? sessionCards.join(",") : "無";
+
+            // 🚨 修正：完美對接原版 GAS 的 doPost 欄位數量(9個參數)與順序
+            sendDataToSheet(
+                studentName, 
+                hp, 
+                totalTime, 
+                rescueTriggered, 
+                rescueFails, 
+                diagnosticLogs.length, 
+                `[AI求助:${aiCopyCount}次] | ` + diagnosticLogs.join(" | "), // 💡 聰明做法：把次數塞在錯誤詳細裡，不佔用獨立欄位
+                itemsText
+            );
+        }
+        
+        const scriptURL = 'https://script.google.com/macros/s/AKfycbwQnum1bAGvOb-dv5hL08S0pzMB93_gN0ZmoqCQtUjKFYOT-vs8Df0iTT6OMpx_sb6pjg/exec';
+        
+        // 🚨 修正：精準還原成你原版 GAS 的 9 個參數定義，第 10 個由內部附加發送
+        function sendDataToSheet(name, hp, time, rescueT, rescueF, errorCount, errorDetails, cards) {
+            if(!scriptURL) return;
+            let formData = new URLSearchParams();
+            formData.append('name', name);
+            formData.append('hp', hp);
+            formData.append('time', time);
+            formData.append('rescueTriggered', rescueT);
+            formData.append('rescueFails', rescueF); 
+            formData.append('errorCount', errorCount);
+            formData.append('errorDetails', errorDetails);
+            formData.append('cards', cards);
+            
+            // 🚨 精準對齊原版 GAS：讓 fullCollection 被放在第 10 個發送，寫入 Sheet 的第 J 欄（索引9）
+            let storageKey = "gachaCollection_" + name;
+            let fullCollection = localStorage.getItem(storageKey) || "[]";
+            formData.append('fullCollection', fullCollection);
+            
+            fetch(scriptURL, { method: 'POST', body: formData }).catch(e=>console.log(e));
+        }
+
+        async function syncCloudData() {
+            let inputName = document.getElementById('student-name').value.replace(/\s+/g, '');
+            if(!inputName) { alert("⚠️ 請先輸入您的姓名，才能尋找雲端存檔喔！"); return; }
+            if(!scriptURL) { alert("⚠️ 尚未設定 Google Sheet 網址，無法同步！"); return; }
+
+            let syncBtn = document.getElementById('btn-sync');
+            let originalText = syncBtn.innerText;
+            syncBtn.innerText = "⏳ 雲端同步中，請稍候...";
+            syncBtn.disabled = true;
+
+            try {
+                let fetchUrl = scriptURL + "?name=" + encodeURIComponent(inputName) + "&t=" + new Date().getTime();
+                let response = await fetch(fetchUrl, { method: "GET" });
+                let result = await response.json();
+
+                if(result.status === "success") {
+                    let cloudDataRaw = result.data;
+                    let cloudData = [];
+                    if (typeof cloudDataRaw === 'string') {
+                        cloudData = JSON.parse(cloudDataRaw);
+                    } else {
+                        cloudData = cloudDataRaw;
+                    }
+                    
+                    let storageKey = "gachaCollection_" + inputName;
+                    let localData = JSON.parse(localStorage.getItem(storageKey)) || [];
+
+                    cloudData.forEach(cloudCard => {
+                        let existing = localData.find(c => c.id === cloudCard.id);
+                        if (existing) {
+                            existing.count = Math.max(existing.count, cloudCard.count); 
+                        } else {
+                            localData.push(cloudCard);
+                        }
+                    });
+
+                    localStorage.setItem(storageKey, JSON.stringify(localData));
+                    alert("✅ 雲端同步成功！已為您載入最新圖鑑進度！\n(系統已自動比對並保留您的最高進度)");
+                } else {
+                    alert("🆕 找不到您的雲端存檔。\n如果您是第一次玩，這是正常的，系統將為您建立全新圖鑑！");
+                }
+            } catch(e) {
+                alert("❌ 同步失敗，請檢查網路連線或稍後再試。");
+                console.error(e);
+            } finally {
+                syncBtn.innerText = originalText;
+                syncBtn.disabled = false;
+            }
+        }
+
+        function handleAiAssist(base64Prompt, targetUrl) {
+            let promptText = decodeURIComponent(escape(atob(base64Prompt)));
+            aiCopyCount++; 
+            alert("📋 AI 提詞複製成功！\n接下來會自動開啟 Gemini，請直接在對話框「貼上 (Ctrl+V)」送出即可！");
+            
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(promptText).then(() => {
+                    window.open(targetUrl, '_blank');
+                }).catch(err => {
+                    window.open(targetUrl, '_blank');
+                });
+            } else {
+                window.open(targetUrl, '_blank');
+            }
+        }
+    </script>
+</body>
+</html>
