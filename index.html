@@ -990,17 +990,21 @@ const quizData = {
                 `;
                 document.getElementById('game-area').insertBefore(aiBox, document.getElementById('options-area'));
 
-                // 修正點 2：直接綁定事件監聽器，不經過 Base64 轉換，避開任何單雙引號衝突
-                aiBox.querySelector('#ai-action-btn').addEventListener('click', function() {
-                    // 1. 執行複製提詞與新視窗開啟
-                    handleAiAssist(btoa(unescape(encodeURIComponent(q.aiPrompt))), safeUrl);
+// === 找到 renderQuestion 裡的事件監聽器，100% 完美替換為這段 ===
+                aiBox.querySelector('#ai-action-btn').addEventListener('click', function(e) {
+                    // 🛡️ 防禦連點：如果按鈕已經被點過，直接攔截，絕不允許二度觸發計時器！
+                    if (this.classList.contains('is-active')) return;
+                    this.classList.add('is-active');
 
-                    // 2. 啟動 30 秒倒數與作答按鈕鎖定
+                    // 1. 執行複製提詞
+                    handleAiAssist(q.aiPrompt, safeUrl);
+
+                    // 2. 凍結作答選項，啟動 30 秒冷卻
                     const optionsArea = document.getElementById('options-area');
                     const originalButtons = optionsArea.querySelectorAll('button');
                     originalButtons.forEach(b => b.disabled = true);
                     
-                    this.disabled = true;
+                    this.disabled = true; // 鎖死 AI 按鈕
                     this.style.background = "#7f8c8d";
                     this.style.boxShadow = "none";
 
@@ -1016,8 +1020,11 @@ const quizData = {
                             clearInterval(countdown);
                             timerMsg.style.color = "#2ecc71";
                             timerMsg.innerText = "✅ 戰術解讀完成！作答通道已解鎖！";
-                            originalButtons.forEach(b => b.disabled = false);
-                            window.aiTimerQualified = true;
+                            originalButtons.forEach(b => b.disabled = false); // 解鎖作答
+                            
+                            // 💡 終極修正：在此處（解鎖的瞬間）才無條件幫學生的有效次數實質「穩穩加上 1 次」！
+                            // 這樣就算學生連續點擊或用了護盾，次數也絕對 100% 跟畫面的倒數對齊，再也不會遺漏！
+                            aiCopyCount++; 
                         }
                     }, 1000);
                 });
@@ -1051,53 +1058,69 @@ const quizData = {
             isTransitioning = true; 
             let isRescueQuestion = currentStep.includes("_help"); 
 
-            if (!selectedOption.isCorrect) {
-                playSound('wrong'); 
-                hp--; if(hp < 0) hp = 0; 
-                currentStreak = 0; 
-                updateStatus();
-                if (selectedOption.log) diagnosticLogs.push(selectedOption.log);
+// === 找到 handleAnswer 內的答錯 (if) 分支，修改成這樣 ===
+        if (!selectedOption.isCorrect) {
+            playSound('wrong'); 
+            
+            // 🛡️ 擴充機制：檢查學生圖鑑內是否有【AI 戰術教練卡】可以充當護盾抵扣血
+            let storageKey = "gachaCollection_" + studentName;
+            let pastCollection = JSON.parse(localStorage.getItem(storageKey)) || [];
+            // 指向我們設定的 AI 卡 ID (p1_ai)
+            let aiShieldIndex = pastCollection.findIndex(c => c.id === "p1_ai" && c.count > 0);
+
+            if (aiShieldIndex > -1) {
+                // 扣除一張教練卡，並觸發護盾特效
+                pastCollection[aiShieldIndex].count--;
+                localStorage.setItem(storageKey, JSON.stringify(pastCollection));
+                alert("🛡️ 戰術護盾觸發！消耗 1 張【AI 戰術教練卡】，本次答錯免扣血（HP 保留）！");
                 
-                if (!failedQuestions.includes(currentStep)) {
-                    failedQuestions.push(currentStep);
-                }
-
-                if (!isRescueQuestion) { rescueTriggered++; } 
-                else { rescueFails++; }
-
-                currentStep = selectedOption.next;
-                renderQuestion();
-            } 
-           else {
-                playSound('correct'); 
-                showCorrectSplash();  
-                
-                // 💡 修正：只有在滿足 30秒強制沉澱冷卻完畢時，答對救援題才計入有效次數
-                if (isRescueQuestion && window.aiTimerQualified) {
-                    aiCopyCount++; 
-                    window.aiTimerQualified = false; // 用完即洗掉
-                }
-
-                if (!isRescueQuestion && !failedQuestions.includes(currentStep)) {
-                    currentStreak++;
-                }
-                // ... (後面接你原本的 setTimeout 換題邏輯)
-
-                setTimeout(() => {
-                    let nextStep = selectedOption.next;
-                    
-                    if (currentStreak >= 2) {
-                        currentStreak = 0; 
-                        currentStep = nextStep;
-                        document.getElementById('gacha-title').innerText = "🔥 二連擊達成！獲得抽卡機會！ ✨";
-                        prepareGacha(); 
-                    } else {
-                        currentStep = nextStep;
-                        renderQuestion();
-                    }
-                    updateStatus();
-                }, 800);
+                // 重新渲染畫面的背包庫存顯示
+                let totalOwned = pastCollection.reduce((sum, c) => sum + c.count, 0);
+                document.getElementById('inventory-display').innerText = `🎒 本局卡簿: ${totalOwned} 張`;
+            } else {
+                // 沒有護盾卡，正常扣血
+                hp--; 
+                if(hp < 0) hp = 0; 
             }
+
+            currentStreak = 0; 
+            updateStatus();
+            if (selectedOption.log) diagnosticLogs.push(selectedOption.log);
+            
+            if (!failedQuestions.includes(currentStep)) {
+                failedQuestions.push(currentStep);
+            }
+
+            if (!isRescueQuestion) { rescueTriggered++; } 
+            else { rescueFails++; }
+
+            currentStep = selectedOption.next;
+            renderQuestion();
+        }
+// === 確保你的 handleAnswer 答對分支是長這樣（還原成最乾淨的換題） ===
+        else {
+            playSound('correct'); 
+            showCorrectSplash();  
+            
+            if (!isRescueQuestion && !failedQuestions.includes(currentStep)) {
+                currentStreak++;
+            }
+
+            setTimeout(() => {
+                let nextStep = selectedOption.next;
+                
+                if (currentStreak >= 2) {
+                    currentStreak = 0; 
+                    currentStep = nextStep;
+                    document.getElementById('gacha-title').innerText = "🔥 二連擊達成！獲得抽卡機會！ ✨";
+                    prepareGacha(); 
+                } else {
+                    currentStep = nextStep;
+                    renderQuestion();
+                }
+                updateStatus();
+            }, 800);
+        }
         }
 
         function showCorrectSplash() {
@@ -1299,9 +1322,9 @@ const quizData = {
             }
         }
 
-        function handleAiAssist(base64Prompt, targetUrl) {
-            let promptText = decodeURIComponent(escape(atob(base64Prompt)));
-            aiCopyCount++; 
+// === 修正後最底下的 handleAiAssist 函式 (100% 不重複加分且不破壞生命週期) ===
+        function handleAiAssist(promptText, targetUrl) {
+            // 💡 修正點：直接接收純文字，徹底根除 Base64 解碼崩潰漏洞
             alert("📋 AI 提詞複製成功！\n接下來會自動開啟 Gemini，請直接在對話框「貼上 (Ctrl+V)」送出即可！");
             
             if (navigator.clipboard && navigator.clipboard.writeText) {
